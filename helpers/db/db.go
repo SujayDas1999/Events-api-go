@@ -1,6 +1,7 @@
 package db
 
 import (
+	secrets_reader "events-api/helpers/secrets-reader"
 	eventModel "events-api/models/event"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -9,17 +10,27 @@ import (
 var DB *gorm.DB
 
 func InitDB() *gorm.DB {
-	dsn := "postgresql://inu________:qrUzdP1RhJ6HdY9aWrT3pQ@test-cockroach-3683.6xw.cockroachlabs.cloud:26257/events-api?sslmode=verify-full"
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	dsn := secrets_reader.SecretsReader("config.json")
+
+	var emptySecretsManager secrets_reader.Secrets
+
+	if dsn == emptySecretsManager {
+		panic("Unable to retrieve query string")
+		return &gorm.DB{}
+	}
+
+	database, err := gorm.Open(postgres.Open(dsn.PostgresConn), &gorm.Config{})
 
 	if err != nil {
 		panic(err)
+		return &gorm.DB{}
 	}
 
 	err = database.AutoMigrate(&eventModel.Event{})
 
 	if err != nil {
 		panic(err)
+		return &gorm.DB{}
 	}
 
 	DB = database
