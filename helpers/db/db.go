@@ -26,11 +26,3 @@ func InitDB() *gorm.DB {
 
 	return database
 }
-
-//func (db *DB) SetDB(database *gorm.DB) {
-//	db.Db = database
-//}
-//
-//func (db *DB) ReturnCurrentDbInstance() *gorm.DB {
-//	return db.Db
-//}

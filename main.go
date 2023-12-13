@@ -9,11 +9,7 @@ import (
 
 func main() {
 
-	//var db database.DB
-
 	_ = database.InitDB()
-
-	//db.SetDB(postgresInstance)
 
 	server := gin.Default()
 
