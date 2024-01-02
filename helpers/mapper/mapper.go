@@ -1,6 +1,8 @@
 package mapper
 
-import eventModel "events-api/models/event"
+import (
+	eventModel "events-api/models"
+)
 
 func EventsMapper(event *eventModel.Event) *eventModel.Event {
 	return &eventModel.Event{

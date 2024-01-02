@@ -2,7 +2,7 @@ package db
 
 import (
 	secrets_reader "events-api/helpers/secrets-reader"
-	eventModel "events-api/models/event"
+	eventModel "events-api/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -26,7 +26,7 @@ func InitDB() *gorm.DB {
 		return &gorm.DB{}
 	}
 
-	err = database.AutoMigrate(&eventModel.Event{})
+	err = database.AutoMigrate(&eventModel.Event{}, &eventModel.User{}, &eventModel.Registration{})
 
 	if err != nil {
 		panic(err)
@@ -35,5 +35,5 @@ func InitDB() *gorm.DB {
 
 	DB = database
 
-	return database
+	return DB
 }

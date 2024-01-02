@@ -1,9 +1,10 @@
 package routes
 
 import (
+	"events-api/helpers/ReturnHelper"
 	"events-api/helpers/db"
+	eventModel "events-api/models"
 	"events-api/models/dtos/eventDto"
-	eventModel "events-api/models/event"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -12,9 +13,9 @@ import (
 
 func CreateEvent(context *gin.Context) {
 
-	var event eventModel.Event
-
-	err := context.ShouldBindJSON(&event)
+	var eventDTO eventDto.EventDto
+	userid, _ := context.Get("user_id")
+	err := context.ShouldBindJSON(&eventDTO)
 
 	if err != nil {
 		fmt.Println(err)
@@ -25,7 +26,17 @@ func CreateEvent(context *gin.Context) {
 		return
 	}
 
-	event.UserId = 1
+	var event eventModel.Event
+
+	event.ID = uuid.New()
+	event.Name = eventDTO.Name
+	event.Location = eventDTO.Location
+	event.DateTime = eventDTO.DateTime
+	event.Description = eventDTO.Description
+
+	userId := uuid.MustParse(userid.(string))
+
+	event.UserId = userId
 
 	savedEvent, err := eventModel.Event.Save(event, db.DB)
 
@@ -34,14 +45,21 @@ func CreateEvent(context *gin.Context) {
 		return
 	}
 
+	var eventResponseDto eventDto.EventResponseDto
+
+	eventResponseDto.Name = savedEvent.Name
+	eventResponseDto.UserId = savedEvent.UserId
+	eventResponseDto.DateTime = savedEvent.DateTime
+	eventResponseDto.Description = savedEvent.Description
+	eventResponseDto.Location = savedEvent.Location
+
 	context.JSON(http.StatusCreated, gin.H{
 		"message": "Event created",
-		"event":   savedEvent,
+		"event":   eventResponseDto,
 	})
 }
 
 func GetEventById(context *gin.Context) {
-	//var id int
 
 	id, boole := context.Params.Get("id")
 
@@ -76,12 +94,21 @@ func UpdateEvent(context *gin.Context) {
 
 	id, boole := context.Params.Get("id")
 
+	userid, _ := context.Get("user_id")
+
+	userId := uuid.MustParse(userid.(string))
+
 	if boole == false {
 		panic("Something went wrong")
 		return
 	}
 
 	event, err := eventModel.GetEventById(uuid.MustParse(id), db.DB)
+
+	if event.UserId != userId {
+		panic("not authenticated")
+		return
+	}
 
 	if err != nil {
 		panic(err)
@@ -111,4 +138,45 @@ func UpdateEvent(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{
 		"event": event,
 	})
+}
+
+func DeleteEvent(context *gin.Context) {
+	id, success := context.Params.Get("id")
+
+	userid, _ := context.Get("user_id")
+
+	userId := uuid.MustParse(userid.(string))
+	if success == false {
+		ReturnHelper.Return(context, http.StatusBadRequest, gin.H{
+			"error": "Bad Request",
+		})
+		return
+	}
+
+	event, err := eventModel.GetEventById(uuid.MustParse(id), db.DB)
+
+	if event.UserId != userId {
+		panic("not authenticated")
+		return
+	}
+
+	var eventid = event.ID
+
+	if err != nil {
+		ReturnHelper.Return(context, http.StatusBadRequest, gin.H{
+			"error": "Event not found",
+		})
+		return
+	}
+
+	result, err := eventModel.DeleteEvent(event, db.DB)
+
+	if err != nil && result != true {
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{
+		"success": "Deleted Event:" + eventid.String(),
+	})
+
 }
